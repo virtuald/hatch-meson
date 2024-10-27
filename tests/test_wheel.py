@@ -177,6 +177,14 @@ def test_configure_data(wheel_configure_data):
 #     assert int(output) == 3
 
 
+def test_sharedlib_in_package(venv, wheel_sharedlib_in_package):
+    venv.pip("install", wheel_sharedlib_in_package)
+    output = venv.python("-c", "import mypkg; print(mypkg.example_sum(2, 5))")
+    assert int(output) == 7
+    output = venv.python("-c", "import mypkg; print(mypkg.example_prod(6, 7))")
+    assert int(output) == 42
+
+
 # @pytest.mark.skipif(
 #     sys.platform not in {"linux", "darwin"}, reason="Not supported on this platform"
 # )
