@@ -1,0 +1,65 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hatch-meson"
+dynamic = ["version"]
+description = "Hatchling plugin for building extensions via meson"
+readme = "README.md"
+requires-python = ">=3.8"
+license = "MIT"
+authors = [
+    {name = "Dustin Spicuzza", email = "dustin@virtualroadside.com"},
+]
+keywords = [
+    "hatch",
+    "meson",
+]
+classifiers = [
+    "Framework :: Hatch",
+    "Topic :: Software Development :: Build Tools",
+]
+dependencies = [
+    'meson >= 0.64.0; python_version < "3.12"',
+    'meson >= 1.2.3; python_version >= "3.12"',
+    "hatchling >= 1.24.1",
+    "validobj",
+]
+
+[project.optional-dependencies]
+test = [
+  'build',
+  'packaging >= 23.1',
+  'pytest >= 6.0',
+  'pytest-cov[toml]',
+  'pytest-mock',
+  'cython >= 3.0.3', # required for Python 3.12 support
+  'wheel',
+  'typing-extensions >= 3.7.4; python_version < "3.11"',
+]
+
+[project.urls]
+Tracker = "https://github.com/virtuald/hatch-meson/issues"
+Source = "https://github.com/virtuald/hatch-meson"
+
+[project.entry-points.hatch]
+meson = "hatch_meson.hooks"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/hatch_meson/_version.py"
+
+[tool.pytest.ini_options]
+minversion = '6.0'
+addopts = ['-ra', '--strict-markers', '--strict-config']
+log_cli_level = 'info'
+norecursedirs = 'tests/packages/*'
+testpaths = ['tests']
+xfail_strict = true
+filterwarnings = [
+  'error',
+]
+
