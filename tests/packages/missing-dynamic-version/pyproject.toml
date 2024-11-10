@@ -1,0 +1,17 @@
+# SPDX-FileCopyrightText: 2023 The meson-python developers
+#
+# SPDX-License-Identifier: MIT
+
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatch-meson"]
+
+[project]
+name = 'missing-dynamic-version'
+dynamic = ['version']
+
+[tool.hatch.version]
+source = "meson"
+
+[tool.hatch.build.hooks.meson]
+[tool.hatch.metadata.hooks.meson]

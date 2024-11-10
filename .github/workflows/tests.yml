@@ -1,0 +1,354 @@
+# SPDX-FileCopyrightText: 2021 The meson-python developers
+#
+# SPDX-License-Identifier: MIT
+
+name: tests
+
+on:
+  push:
+    branches:
+      - main
+      - release-*
+  pull_request:
+    branches:
+      - main
+      - release-*
+    paths:
+      # This is spelt like this to do not ignore the docs/examples/ folder.
+      - '**'
+      - '!docs/**'
+      - 'docs/examples/**'
+      - '!CHANGELOG.rst'
+      - '!LICENSE'
+      - '!LICENSES/**'
+      - '!README.md'
+      - '!.github/workflows/docs.yml'
+  workflow_dispatch:
+    # Allow to run manually
+
+env:
+  FORCE_COLOR: 1
+  PIP_DISABLE_PIP_VERSION_CHECK: 1
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: psf/black@stable
+
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-14
+          - windows-latest
+        python:
+          - '3.8'
+          - '3.13'
+        meson:
+          -
+        pyproject_metadata:
+          -
+        hatchling:
+          -
+        include:
+          - os: ubuntu-latest
+            python: 'pypy-3.9'
+          - os: ubuntu-latest
+            python: 'pypy-3.10'
+          - os: ubuntu-latest
+            python: '3.8'
+          - os: ubuntu-latest
+            python: '3.9'
+          - os: ubuntu-latest
+            python: '3.10'
+          # Test with older supported Meson version.  Meson up to
+          # version 1.2.3 requires distutils, which has been removed
+          # from the stdlib in Python 3.12, thus test with Pythn 3.11.
+          - os: ubuntu-latest
+            python: '3.11'
+            meson: '~=0.64.0'
+          - os: ubuntu-latest
+            python: '3.11'
+            meson: '~=1.0.0'
+          - os: ubuntu-latest
+            python: '3.11'
+            meson: '~=1.1.0'
+          - os: ubuntu-latest
+            python: '3.12'
+            meson: '~=1.2.3'
+          - os: ubuntu-latest
+            python: '3.12'
+            meson: '~=1.3.0'
+          - os: ubuntu-latest
+            python: '3.12'
+            meson: '~=1.4.0'
+          - os: ubuntu-latest
+            python: '3.12'
+            meson: '~=1.5.0'
+          # Test with Meson master branch.
+          - os: ubuntu-latest
+            python: '3.12'
+            meson: '@git+https://github.com/mesonbuild/meson.git'
+          - os: windows-latest
+            python: '3.12'
+            meson: '@git+https://github.com/mesonbuild/meson.git'
+          # Test with oldest supported pyproject-metadata and hatchling
+          - os: ubuntu-latest
+            python: '3.12'
+            pyproject_metadata: '==0.8.0'
+            hatchling: '==1.24.1'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up target Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install Ninja
+        run: sudo apt-get install ninja-build
+        if: ${{ runner.os == 'Linux' }}
+
+      - name: Install Ninja
+        run: brew install ninja
+        if: ${{ runner.os == 'macOS' }}
+
+      - name: Install Ninja
+        run: python -m pip install ninja
+        if: ${{ runner.os == 'Windows' }}
+
+      - name: Install Meson
+        run: python -m pip install "meson ${{ matrix.meson }}"
+        if: ${{ matrix.meson }}
+
+      - name: Install pyproject-metadata
+        run: python -m pip install "pyproject-metadata ${{ matrix.pyproject_metadata }}"
+        if: ${{ matrix.pyproject_metadata }}
+
+      - name: Install hatchling
+        run: python -m pip install "hatchling ${{ matrix.hatchling }}"
+        if: ${{ matrix.hatchling }}
+
+      - name: Install
+        run: python -m pip install .[test]
+
+      - name: Run tests
+        run: python -m pytest --showlocals -vv --cov --cov-report=xml
+
+      # - name: Upload coverage report
+      #   uses: codecov/codecov-action@v4
+      #   if: ${{ always() }}
+      #   env:
+      #     CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  msvc:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python:
+          - '3.11'
+        meson:
+          -
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up target Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install Ninja
+        run: python -m pip install ninja
+
+      - name: Setup MSVC
+        uses: bus1/cabuild/action/msdevshell@e22aba57d6e74891d059d66501b6b5aed8123c4d  # v1
+        with:
+          architecture: x64
+
+      - name: Install Meson
+        run: python -m pip install "meson==${{ matrix.meson }}"
+        if: ${{ matrix.meson }}
+
+      - name: Install
+        run: python -m pip install .[test]
+
+      - name: Run tests
+        run: python -m pytest --showlocals -vv
+
+  cygwin:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python:
+          - '3.9'
+        meson:
+          -
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Cygwin
+        uses: cygwin/cygwin-install-action@v2
+        with:
+          packages: >-
+            python39
+            python39-devel
+            python39-pip
+            python39-setuptools
+            cmake
+            gcc-core
+            gcc-g++
+            git
+            make
+            ninja
+
+      - name: Fix git dubious ownership
+        # This addresses the "fatal: detected dubious ownership in
+        # repository" and "fatal: not in a git directory" errors
+        # encountered when trying to run Cygwin git in a directory not
+        # owned by the current user. This happens when the tests run
+        # Cygwin git in a directory outside the Cygwin filesystem.
+        run: git config --global --add safe.directory '*'
+        shell: C:\cygwin\bin\env.exe CYGWIN_NOWINPATH=1 CHERE_INVOKING=1 C:\cygwin\bin\bash.exe -leo pipefail -o igncr {0}
+
+      - name: Get pip cache path
+        id: pip-cache-path
+        run: echo "path=$(cygpath -w $(python -m pip cache dir))" >> $GITHUB_OUTPUT
+        shell: C:\cygwin\bin\env.exe CYGWIN_NOWINPATH=1 CHERE_INVOKING=1 C:\cygwin\bin\bash.exe -leo pipefail -o igncr {0}
+
+      - name: Restore cache
+        # Cygwin Python cannot use binary wheels from PyPI. Building
+        # some dependencies takes considerable time. Caching the built
+        # wheels speeds up the CI job quite a bit.
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pip-cache-path.outputs.path }}
+          key: cygwin-pip-${{ github.sha }}
+          restore-keys: cygwin-pip-
+
+      - name: Install Meson
+        run: python -m pip install "meson ${{ matrix.meson }}"
+        if: ${{ matrix.meson }}
+        shell: C:\cygwin\bin\env.exe CYGWIN_NOWINPATH=1 CHERE_INVOKING=1 C:\cygwin\bin\bash.exe -leo pipefail -o igncr {0}
+
+      - name: Install
+        # Cygwin patches Python's ensurepip module to look for the
+        # wheels needed to initialize a new virtual environment in
+        # /usr/share/python-wheels/ but nothing in Cygwin actually
+        # puts the setuptools and pip wheels there. Fix this.
+        run: |
+          mkdir /usr/share/python-wheels/
+          pushd /usr/share/python-wheels/
+          python -m pip download setuptools pip
+          popd
+          python -m pip install .[test]
+        shell: C:\cygwin\bin\env.exe CYGWIN_NOWINPATH=1 CHERE_INVOKING=1 C:\cygwin\bin\bash.exe -leo pipefail -o igncr {0}
+
+      - name: Run tests
+        run: python -m pytest --showlocals -vv
+        shell: C:\cygwin\bin\env.exe CYGWIN_NOWINPATH=1 CHERE_INVOKING=1 C:\cygwin\bin\bash.exe -leo pipefail -o igncr {0}
+
+  # pyston:
+  #   runs-on: ubuntu-20.04
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       python:
+  #         - '3.8'
+  #       meson:
+  #         -
+
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+
+  #     - name: Install pyston
+  #       run: |
+  #         wget https://github.com/pyston/pyston/releases/download/pyston_2.3.5/pyston_2.3.5_20.04_amd64.deb
+  #         sudo apt install $(pwd)/pyston_2.3.5_20.04_amd64.deb
+
+  #     - name: Install Ninja
+  #       run: sudo apt-get install ninja-build
+
+  #     - name: Install Meson
+  #       run: python -m pip install "meson ${{ matrix.meson }}"
+  #       if: ${{ matrix.meson }}
+
+  #     - name: Install
+  #       run: pyston -m pip install .[test]
+
+  #     - name: Run tests
+  #       run: pyston -m pytest --showlocals -vv
+
+  homebrew:
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python:
+          - '3.9'
+          - '3.12'
+        meson:
+          -
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Homebrew Python
+        run: |
+          brew install --overwrite python@${{ matrix.python }}
+          echo /usr/local/opt/python@${{ matrix.python }}/libexec/bin/ >> $GITHUB_PATH
+
+      - name: Install Ninja
+        run: brew install ninja
+
+      - name: Update pip
+        # pip >= 23.0 fixes https://github.com/pypa/pip/issues/11539
+        run: python -m pip install --upgrade "pip >= 23.0"
+
+      - name: Install Meson
+        run: python -m pip install "meson ${{ matrix.meson }}"
+        if: ${{ matrix.meson }}
+
+      - name: Install
+        run: python -m pip install .[test]
+
+      - name: Run tests
+        run: python -m pytest --showlocals -vv
+
+  mypy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.9
+
+      - name: Install dependencies
+        run: python -m pip install .
+
+      - name: Install mypy
+        run: python -m pip install mypy==1.13.0
+
+      - name: Run mypy
+        run: cd src && mypy -p hatch_meson

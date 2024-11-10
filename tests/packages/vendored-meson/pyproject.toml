@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: 2023 The meson-python developers
+#
+# SPDX-License-Identifier: MIT
+
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatch-meson"]
+
+[project]
+dynamic = ["name", "version"]
+
+[tool.hatch.version]
+source = "meson"
+
+[tool.hatch.build.hooks.meson]
+meson = 'third-party/meson.py'
+[tool.hatch.metadata.hooks.meson]
+
+[tool.hatch.build.targets.wheel]
+# This wheel is intentionally empty
+bypass-selection = true
+
