@@ -1,0 +1,5 @@
+*.pyc
+.mypy_cache
+/dist
+
+/src/hatch_meson/_version.py

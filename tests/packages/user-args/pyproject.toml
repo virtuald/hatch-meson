@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: 2022 The meson-python developers
+#
+# SPDX-License-Identifier: MIT
+
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatch-meson"]
+
+[project]
+dynamic = ["name", "version"]
+
+[tool.hatch.version]
+source = "meson"
+
+[tool.hatch.build.hooks.meson.args]
+setup = ['config-setup']
+compile = ['config-compile']
+install = ['config-install']
+
+[tool.hatch.metadata.hooks.meson]

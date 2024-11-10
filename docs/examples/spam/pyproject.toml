@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: 2022 The meson-python developers
+# SPDX-FileCopyrightText: 2024 The hatch-meson developers
+#
+# SPDX-License-Identifier: MIT
+
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatch-meson"]
+
+[project]
+name = "spam"
+description = "Example C extension for Python"
+version = "0.0.1"
+requires-python = ">=3.8.0"
+
+[tool.hatch.build.hooks.meson]
+[tool.hatch.metadata.hooks.meson]
+
+[tool.hatch.build.targets.wheel]
+# hatchling includes anything located in the package by default, but they
+# aren't needed in a wheel
+exclude = ["*.c"]
