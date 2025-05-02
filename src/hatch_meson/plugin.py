@@ -410,7 +410,9 @@ class MesonBuildHook(BuildHookInterface):
 
             dst.parent.mkdir(parents=True, exist_ok=True)
 
-            shutil.copy(src, dst)
+            # Use copy2 to preserve file mtime, which ensures incremental build works
+            # if another project is consuming these files
+            shutil.copy2(src, dst)
 
         tag = _compute_tag(install_plan, self._limited_api)
 
