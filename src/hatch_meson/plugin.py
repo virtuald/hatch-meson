@@ -97,7 +97,7 @@ _INSTALLATION_PATH_MAP = {
 
 
 def _map_to_wheel(
-    sources: T.Dict[str, T.Dict[str, T.Any]]
+    sources: T.Dict[str, T.Dict[str, T.Any]],
 ) -> T.DefaultDict[str, T.List[T.Tuple[pathlib.Path, str]]]:
     """Map files to the wheel, organized by wheel installation directory."""
     wheel_files: T.DefaultDict[str, T.List[T.Tuple[pathlib.Path, str]]] = (
@@ -186,7 +186,7 @@ def _is_native(fname) -> bool:
 
 
 def _install_is_pure(
-    install_plan: T.DefaultDict[str, T.List[T.Tuple[pathlib.Path, str]]]
+    install_plan: T.DefaultDict[str, T.List[T.Tuple[pathlib.Path, str]]],
 ) -> bool:
     """Whether the wheel is architecture independent"""
     if install_plan["platlib"]:
@@ -410,7 +410,9 @@ class MesonBuildHook(BuildHookInterface):
 
             dst.parent.mkdir(parents=True, exist_ok=True)
 
-            shutil.copy(src, dst)
+            # Use copy2 to preserve file mtime, which ensures incremental build works
+            # if another project is consuming these files
+            shutil.copy2(src, dst)
 
         tag = _compute_tag(install_plan, self._limited_api)
 
