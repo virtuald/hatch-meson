@@ -16,15 +16,20 @@ def test_dynamic_version(sdist_dynamic_version):
     with tarfile.open(sdist_dynamic_version, "r:gz") as sdist:
         sdist_pkg_info = sdist.extractfile("dynamic_version-1.0.0/PKG-INFO").read()
 
-    assert metadata(sdist_pkg_info) == metadata(
+    sdist_metadata = metadata(sdist_pkg_info)
+    metadata_version = sdist_metadata.get("metadata_version", "2.3")
+
+    expected_metadata = metadata(
         textwrap.dedent(
-            """\
-            Metadata-Version: 2.3
+            f"""\
+            Metadata-Version: {metadata_version}
             Name: dynamic-version
             Version: 1.0.0
         """
         )
     )
+
+    assert sdist_metadata == expected_metadata
 
 
 # def test_contents(sdist_library):
