@@ -677,18 +677,28 @@ def _create_macos_crossfile(crossfile_path: pathlib.Path) -> bool:
                 family = "aarch64" if arch == "arm64" else arch
                 cross_file_data = textwrap.dedent(
                     f"""
-                    [binaries]
-                    c = ['cc', '-arch', {arch!r}]
-                    cpp = ['c++', '-arch', {arch!r}]
-                    objc = ['cc', '-arch', {arch!r}]
-                    objcpp = ['c++', '-arch', {arch!r}]
                     [host_machine]
                     system = 'darwin'
                     cpu = {arch!r}
                     cpu_family = {family!r}
                     endian = 'little'
+                    [binaries]
+                    c = ['cc', '-arch', {arch!r}]
+                    cpp = ['c++', '-arch', {arch!r}]
+                    objc = ['cc', '-arch', {arch!r}]
+                    objcpp = ['c++', '-arch', {arch!r}]
                 """
                 )
+
+                # Support common binaries
+                pkgconf_path = shutil.which("pkgconf")
+                if pkgconf_path:
+                    cross_file_data += f"pkg-config = {pkgconf_path!r}\n"
+
+                strip_path = shutil.which("strip")
+                if strip_path:
+                    cross_file_data += f"strip = {strip_path!r}\n"
+
                 crossfile_path.write_text(cross_file_data, encoding="utf-8")
                 return True
 
