@@ -696,6 +696,8 @@ def _create_macos_crossfile(crossfile_path: pathlib.Path) -> bool:
                 crossfile_path.write_text(cross_file_data, encoding="utf-8")
                 return True
 
+        # Support iOS targets. iOS does not have native build tools and always
+        # requires cross compilation: synthesize the appropriate cross file.
         elif sysconfig.get_platform().startswith("ios-"):
             ios_ver = platform.ios_ver()  # type: ignore[attr-defined]
 
