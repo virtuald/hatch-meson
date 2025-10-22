@@ -402,7 +402,11 @@ class MesonBuildHook(BuildHookInterface):
         for dstrel, src in install_plan["purelib"] + install_plan["platlib"]:
             dst = pkgsrc / dstrel
 
-            force_include[str(dst)] = dstrel.as_posix()
+            # Anything added to force_include will be added to the wheel, even
+            # in editable mode, which is not what we want
+            if version != "editable":
+                force_include[str(dst)] = dstrel.as_posix()
+
             artifacts.append(dst.as_posix())
 
             if str(dst) == str(src):
