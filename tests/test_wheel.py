@@ -413,6 +413,17 @@ def test_custom_target_install_dir(wheel_custom_target_dir):
     }
 
 
+def test_custom_target_install_dir_editable(tmp_path, copyof_custom_target_dir):
+    filename = hatchling.build.build_editable(tmp_path)
+    artifact = wheel.wheelfile.WheelFile(tmp_path / filename)
+    assert wheel_contents(artifact) == {
+        "_custom_target_dir.pth",
+        "custom_target_dir-1.0.0.dist-info/METADATA",
+        "custom_target_dir-1.0.0.dist-info/RECORD",
+        "custom_target_dir-1.0.0.dist-info/WHEEL",
+    }
+
+
 def test_install_tags(copyof_install_tags, tmp_path):
     filename = hatchling.build.build_wheel(
         tmp_path, {"install-args": ["--tags", "pkg1"]}
