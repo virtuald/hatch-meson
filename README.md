@@ -29,6 +29,7 @@ of packaging a python project.
 
 The initial version of hatch-meson contains a lot of code that is copied directly
 from `meson-python`, as are the initial set of tests, so it's not that different.
+I also periodically pull in fixes and tests that are merged into meson-python.
 However, there are some differences.
 
 * Creating a source distribution only uses Hatchling, so scripts added via
