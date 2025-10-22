@@ -686,6 +686,7 @@ def _create_macos_crossfile(crossfile_path: pathlib.Path) -> bool:
                     cpp = ['c++', '-arch', {arch!r}]
                     objc = ['cc', '-arch', {arch!r}]
                     objcpp = ['c++', '-arch', {arch!r}]
+                    strip = ['strip', '-arch', {arch!r}]
                     [host_machine]
                     system = 'darwin'
                     cpu = {arch!r}
@@ -695,5 +696,35 @@ def _create_macos_crossfile(crossfile_path: pathlib.Path) -> bool:
                 )
                 crossfile_path.write_text(cross_file_data, encoding="utf-8")
                 return True
+
+        # Support iOS targets. iOS does not have native build tools and always
+        # requires cross compilation: synthesize the appropriate cross file.
+        elif sysconfig.get_platform().startswith("ios-"):
+            ios_ver = platform.ios_ver()  # type: ignore[attr-defined]
+
+            arch = platform.machine()
+            family = "aarch64" if arch == "arm64" else arch
+            subsystem = "ios-simulator" if ios_ver.is_simulator else "ios"
+
+            cross_file_data = textwrap.dedent(
+                f"""
+                [binaries]
+                ar = '{arch}-apple-{subsystem}-ar'
+                c = '{arch}-apple-{subsystem}-clang'
+                cpp = '{arch}-apple-{subsystem}-clang++'
+                objc = '{arch}-apple-{subsystem}-clang'
+                objcpp = '{arch}-apple-{subsystem}-clang++'
+                strip = '{arch}-apple-{subsystem}-strip'
+
+                [host_machine]
+                system = 'ios'
+                subsystem = {subsystem!r}
+                cpu = {arch!r}
+                cpu_family = {family!r}
+                endian = 'little'
+            """
+            )
+            crossfile_path.write_text(cross_file_data, encoding="utf-8")
+            return True
 
     return False
