@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 import ast
+import importlib.metadata
 import os
 import shutil
 import sys
@@ -87,6 +88,45 @@ def test_user_args(copyof_user_args, tmp_path, monkeypatch):
 def test_unknown_user_args_meson_args(copyof_unknown_user_args_meson_args, tmp_path):
     with pytest.raises(hatch_meson.plugin.ConfigError):
         hatchling.build.build_wheel(tmp_path)
+
+
+def test_native_file_uses_pkg_config_pypi_when_pkgconf_package_installed(
+    copyof_pure, tmp_path, monkeypatch
+):
+    native_file_data = None
+    project_run = hatch_meson.plugin.MesonBuildHook._run
+    script_path = tmp_path / "venv-bin" / "pkgconf-pypi"
+    script_path.parent.mkdir()
+    script_path.write_text("#!/bin/sh\n", encoding="utf-8")
+
+    class FakeDistribution:
+        files = [importlib.metadata.PackagePath("../../../bin/pkgconf-pypi")]
+
+        def locate_file(self, path):
+            assert str(path) == "../../../bin/pkgconf-pypi"
+            return script_path
+
+    metadata_distribution = importlib.metadata.distribution
+
+    def distribution(name):
+        if name == "pkgconf":
+            return FakeDistribution()
+        return metadata_distribution(name)
+
+    def wrapper(self, cmd):
+        nonlocal native_file_data
+        native_file_data = self._meson_native_file.read_text(encoding="utf-8")
+        return project_run(self, cmd)
+
+    monkeypatch.setattr(importlib.metadata, "distribution", distribution)
+    monkeypatch.setattr(hatch_meson.plugin.MesonBuildHook, "_run", wrapper)
+
+    with in_git_repo_context():
+        hatchling.build.build_wheel(tmp_path)
+
+    assert native_file_data is not None
+    assert "python = '" in native_file_data
+    assert f"pkg-config = '{script_path}'" in native_file_data
 
 
 # test_install_tags moved to test_wheel.py
