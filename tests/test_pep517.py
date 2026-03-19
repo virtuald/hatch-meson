@@ -87,13 +87,9 @@ def test_get_meson_command_wrong_version(monkeypatch, tmp_path):
     # The MESON environment variable affects the meson executable lookup and breaks the test.
     monkeypatch.delenv("MESON", raising=False)
     meson = tmp_path / "meson.py"
-    meson.write_text(
-        textwrap.dedent(
-            """
+    meson.write_text(textwrap.dedent("""
         print('0.0.1')
-    """
-        )
-    )
+    """))
     with pytest.raises(
         hatch_meson.plugin.ConfigError,
         match=r"Could not find meson version [0-9\.]+ or newer, found 0\.0\.1\.",
@@ -105,15 +101,11 @@ def test_get_meson_command_error(monkeypatch, tmp_path):
     # The MESON environment variable affects the meson executable lookup and breaks the test.
     monkeypatch.delenv("MESON", raising=False)
     meson = tmp_path / "meson.py"
-    meson.write_text(
-        textwrap.dedent(
-            """
+    meson.write_text(textwrap.dedent("""
         import sys
         print('Just testing', file=sys.stderr)
         sys.exit(1)
-    """
-        )
-    )
+    """))
     with pytest.raises(
         hatch_meson.plugin.ConfigError,
         match=re.escape("Could not execute meson: Just testing"),

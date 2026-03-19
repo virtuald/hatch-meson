@@ -9,7 +9,6 @@ import pytest
 
 import hatchling.build
 
-
 ninja_ver_str = subprocess.run(
     ["ninja", "--version"], check=True, stdout=subprocess.PIPE, text=True
 ).stdout

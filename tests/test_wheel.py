@@ -19,7 +19,6 @@ import wheel.wheelfile
 
 from .conftest import adjust_packaging_platform_tag
 
-
 _meson_ver_str = subprocess.run(
     ["meson", "--version"], check=True, stdout=subprocess.PIPE, text=True
 ).stdout

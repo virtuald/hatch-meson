@@ -314,12 +314,10 @@ class MesonBuildHook(BuildHookInterface):
             ]
 
         # write the native file
-        native_file_data = textwrap.dedent(
-            f"""
+        native_file_data = textwrap.dedent(f"""
             [binaries]
             python = '{sys.executable}'
-        """
-        )
+        """)
         self._meson_native_file.write_text(native_file_data, encoding="utf-8")
 
         # reconfigure if we have a valid Meson build directory. Meson
@@ -679,8 +677,7 @@ def _create_macos_crossfile(crossfile_path: pathlib.Path) -> bool:
                         f"$ARCHFLAGS={archflags!r} and $_PYTHON_HOST_PLATFORM={x!r} do not agree"
                     )
                 family = "aarch64" if arch == "arm64" else arch
-                cross_file_data = textwrap.dedent(
-                    f"""
+                cross_file_data = textwrap.dedent(f"""
                     [binaries]
                     c = ['cc', '-arch', {arch!r}]
                     cpp = ['c++', '-arch', {arch!r}]
@@ -692,8 +689,7 @@ def _create_macos_crossfile(crossfile_path: pathlib.Path) -> bool:
                     cpu = {arch!r}
                     cpu_family = {family!r}
                     endian = 'little'
-                """
-                )
+                """)
                 crossfile_path.write_text(cross_file_data, encoding="utf-8")
                 return True
 
@@ -706,8 +702,7 @@ def _create_macos_crossfile(crossfile_path: pathlib.Path) -> bool:
             family = "aarch64" if arch == "arm64" else arch
             subsystem = "ios-simulator" if ios_ver.is_simulator else "ios"
 
-            cross_file_data = textwrap.dedent(
-                f"""
+            cross_file_data = textwrap.dedent(f"""
                 [binaries]
                 ar = '{arch}-apple-{subsystem}-ar'
                 c = '{arch}-apple-{subsystem}-clang'
@@ -722,8 +717,7 @@ def _create_macos_crossfile(crossfile_path: pathlib.Path) -> bool:
                 cpu = {arch!r}
                 cpu_family = {family!r}
                 endian = 'little'
-            """
-            )
+            """)
             crossfile_path.write_text(cross_file_data, encoding="utf-8")
             return True
 

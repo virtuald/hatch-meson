@@ -6,7 +6,6 @@ import sys
 
 from mesonbuild import mesonmain
 
-
 if "setup" in sys.argv:
     sys.argv.append("-Dcustom-meson-used=true")
 

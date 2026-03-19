@@ -19,15 +19,11 @@ def test_dynamic_version(sdist_dynamic_version):
     sdist_metadata = metadata(sdist_pkg_info)
     metadata_version = sdist_metadata.get("metadata_version", "2.3")
 
-    expected_metadata = metadata(
-        textwrap.dedent(
-            f"""\
+    expected_metadata = metadata(textwrap.dedent(f"""\
             Metadata-Version: {metadata_version}
             Name: dynamic-version
             Version: 1.0.0
-        """
-        )
-    )
+        """))
 
     assert sdist_metadata == expected_metadata
 

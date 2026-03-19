@@ -11,7 +11,6 @@ import sys
 import sysconfig
 import typing
 
-
 if typing.TYPE_CHECKING:  # pragma: no cover
     from typing import Optional, Union
 

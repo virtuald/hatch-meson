@@ -7,7 +7,6 @@
 import os
 import sys
 
-
 outdir = os.path.join(sys.argv[1], "generated")
 os.makedirs(outdir, exist_ok=True)
 

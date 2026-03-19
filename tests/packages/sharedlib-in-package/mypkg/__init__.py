@@ -48,5 +48,4 @@ _append_to_sharedlib_load_path()
 
 from ._example import example_prod, example_sum  # noqa: E402
 
-
 __all__ = ["example_prod", "example_sum"]

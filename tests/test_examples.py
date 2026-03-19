@@ -13,7 +13,6 @@ import hatchling.build
 
 from .conftest import chdir
 
-
 examples_dir = pathlib.Path(__file__).parent.parent / "docs" / "examples"
 
 

@@ -4,5 +4,4 @@
 
 from ._example import example_sum
 
-
 __all__ = ["example_sum"]
