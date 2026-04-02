@@ -13,6 +13,7 @@ import argparse
 import collections
 import functools
 import importlib.machinery
+import importlib.metadata
 import inspect
 import json
 import os
@@ -94,6 +95,19 @@ _INSTALLATION_PATH_MAP = {
     # "{libdir}": "mesonpy-libs",
     # "{libdir_shared}": "mesonpy-libs",
 }
+
+
+def _pkgconf_binary_for_native_file() -> T.Optional[str]:
+    try:
+        dist = importlib.metadata.distribution("pkgconf")
+    except importlib.metadata.PackageNotFoundError:
+        return None
+
+    for file in dist.files or ():
+        if file.name == "pkgconf-pypi":
+            return os.fspath(dist.locate_file(file))
+
+    return None
 
 
 def _map_to_wheel(
@@ -314,10 +328,12 @@ class MesonBuildHook(BuildHookInterface):
             ]
 
         # write the native file
-        native_file_data = textwrap.dedent(f"""
-            [binaries]
-            python = '{sys.executable}'
-        """)
+        native_file_entries = [f"python = '{sys.executable}'"]
+        pkgconf = _pkgconf_binary_for_native_file()
+        if pkgconf is not None:
+            native_file_entries.append(f"pkg-config = '{pkgconf}'")
+
+        native_file_data = "[binaries]\n" + "\n".join(native_file_entries) + "\n"
         self._meson_native_file.write_text(native_file_data, encoding="utf-8")
 
         # reconfigure if we have a valid Meson build directory. Meson

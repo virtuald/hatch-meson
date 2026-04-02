@@ -42,6 +42,9 @@ However, there are some differences.
   files. You can if you want, but it is recommended to use Hatchling's
   standard mechanisms for doing this instead
 * Will not create wheels that contain both purelib and platlib packages
+* If the Python `pkgconf` package is installed in the build environment,
+  hatch-meson will point Meson's native file `pkg-config` binary at the installed
+  `pkgconf-pypi` script so Meson can lookup dependencies exposed by other wheels
 
 While hatch-meson will try to support many of the same things that meson-python
 supports, it is not a goal to have the exact same behavior.
