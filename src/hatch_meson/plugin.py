@@ -104,7 +104,7 @@ def _pkgconf_binary_for_native_file() -> T.Optional[str]:
         return None
 
     for file in dist.files or ():
-        if file.name == "pkgconf-pypi":
+        if file.name in ("pkgconf-pypi", "pkgconf-pypi.exe"):
             return os.fspath(dist.locate_file(file))
 
     return None
