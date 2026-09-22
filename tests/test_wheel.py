@@ -427,15 +427,33 @@ def test_custom_target_install_dir(wheel_custom_target_dir):
     }
 
 
-def test_custom_target_install_dir_editable(tmp_path, copyof_custom_target_dir):
+def test_custom_target_install_dir_editable(tmp_path, copyof_custom_target_dir, venv):
     filename = hatchling.build.build_editable(tmp_path)
-    artifact = wheel.wheelfile.WheelFile(tmp_path / filename)
-    assert wheel_contents(artifact) == {
-        "_custom_target_dir.pth",
-        "custom_target_dir-1.0.0.dist-info/METADATA",
-        "custom_target_dir-1.0.0.dist-info/RECORD",
-        "custom_target_dir-1.0.0.dist-info/WHEEL",
-    }
+    with wheel.wheelfile.WheelFile(tmp_path / filename) as artifact:
+        # The .pth filename is an implementation detail of editables/Hatchling.
+        contents = wheel_contents(artifact)
+        assert {name for name in contents if not name.endswith(".pth")} == {
+            "custom_target_dir-1.0.0.dist-info/METADATA",
+            "custom_target_dir-1.0.0.dist-info/RECORD",
+            "custom_target_dir-1.0.0.dist-info/WHEEL",
+        }
+
+    venv.pip("install", os.fspath(tmp_path / filename))
+    # -I prevents the working directory or PYTHONPATH from masking a broken
+    # editable install. The generated modules must come from the source tree.
+    output = venv.python(
+        "-I",
+        "-c",
+        "from pathlib import Path; "
+        "import package.generated.one as one; "
+        "import package.generated.two as two; "
+        "print(Path(one.__file__).resolve().as_posix()); "
+        "print(Path(two.__file__).resolve().as_posix())",
+    )
+    assert output.splitlines() == [
+        (copyof_custom_target_dir / "package" / "generated" / name).resolve().as_posix()
+        for name in ("one.py", "two.py")
+    ]
 
 
 def test_install_tags(copyof_install_tags, tmp_path):
