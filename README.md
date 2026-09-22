@@ -98,6 +98,19 @@ name = "myproject"
 Building an sdist and wheel can be done using standard python build tooling. Refer
 to the hatch documentation for more details.
 
+### Reusing build directories
+
+hatch-meson records the Python environment and build-tool locations in
+`hatch-meson-environment.json` in the Meson build directory. When these change
+(for example, between isolated installs or when switching `--no-build-isolation`),
+it refreshes Meson's cached dependencies before building. Unchanged environments
+retain the dependency cache, and compiled artifacts are kept for incremental builds.
+Existing build directories without this record are refreshed on their next build.
+
+Changes to dependency packages installed in place are not detected by this record.
+After such changes, clear Meson's dependency cache manually or remove the build
+directory before rebuilding.
+
 Credit
 ------
 

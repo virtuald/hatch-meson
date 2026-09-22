@@ -310,7 +310,9 @@ class MesonBuildHook(BuildHookInterface):
         self._meson_native_file = self._build_dir / "hatch-meson-native-file.ini"
         self._meson_cross_file = self._build_dir / "hatch-meson-cross-file.ini"
 
-        self._meson = _get_meson_command(self._hook_config.meson)
+        self._meson, meson_version = _get_meson_command_and_version(
+            self._hook_config.meson
+        )
 
         self._ninja = _env_ninja_command()
         if self._ninja is None:
@@ -343,7 +345,51 @@ class MesonBuildHook(BuildHookInterface):
         # to be created as late as possible or deleted if something
         # goes wrong during setup.
         reconfigure = (self._build_dir / "meson-private" / "coredata.dat").is_file()
+
+        # pip's isolated builds can use the same interpreter/prefix but different
+        # temporary package directories. Reconfigure alone retains dependencies
+        # pointing into the previous (possibly already deleted) environment.
+        environment = {
+            "executable": sys.executable,
+            "prefix": sys.prefix,
+            "path": [os.path.abspath(p) for p in sys.path],
+            "meson": [shutil.which(self._meson[0]) or self._meson[0], *self._meson[1:]],
+            "pkgconf": pkgconf,
+            "meson_version": meson_version,
+        }
+        environment_file = self._build_dir / "hatch-meson-environment.json"
+        if reconfigure:
+            try:
+                previous_environment = json.loads(
+                    environment_file.read_text(encoding="utf-8")
+                )
+            except (OSError, ValueError):
+                previous_environment = None
+            if previous_environment != environment:
+                # configure --clearcache is supported even by Meson 0.64.
+                # Keep compiled artifacts for incremental builds.
+                clear_command = self._meson + [
+                    "configure",
+                    "--clearcache",
+                    os.fspath(self._build_dir),
+                ]
+                try:
+                    self._run(clear_command)
+                except SystemExit as e:
+                    if e.code != 1:
+                        raise
+                    # configure cannot load data from incompatible Meson
+                    # versions, but setup can regenerate it. Retry cache clearing
+                    # after recovery; never mark stale dependencies as current.
+                    self.app.display_info(
+                        "Reconfiguring Meson build data before retrying cache refresh."
+                    )
+                    self._run_configure(reconfigure)
+                    self._run(clear_command)
+
         self._run_configure(reconfigure)
+        # Never mark a failed configuration as belonging to the new environment.
+        environment_file.write_text(json.dumps(environment), encoding="utf-8")
 
         # limited API
         self._limited_api = self._hook_config.limited_api
@@ -612,6 +658,13 @@ def _get_meson_command(
     meson: T.Optional[str] = None, *, version: str = _MESON_REQUIRED_VERSION
 ) -> T.List[str]:
     """Return the command to invoke meson."""
+    return _get_meson_command_and_version(meson, version=version)[0]
+
+
+def _get_meson_command_and_version(
+    meson: T.Optional[str] = None, *, version: str = _MESON_REQUIRED_VERSION
+) -> T.Tuple[T.List[str], str]:
+    """Return the command and its version without an additional subprocess."""
 
     # The MESON env var, if set, overrides the config value from pyproject.toml.
     # The config value, if given, is an absolute path or the name of an executable.
@@ -646,7 +699,7 @@ def _get_meson_command(
             f"Could not find meson version {version} or newer, found {meson_version}."
         )
 
-    return cmd
+    return cmd, meson_version
 
 
 def _env_ninja_command(*, version: str = _NINJA_REQUIRED_VERSION) -> T.Optional[str]:
